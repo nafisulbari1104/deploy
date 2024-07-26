@@ -1,0 +1,28 @@
+Create New POD:
+
+oc login --server="https://api.ocp-uat.corpuat.danamon.co.id:6443" --insecure-skip-tls-verify -u %username% -p %password%
+oc login --server="https://api.ocp-uat.corpuat.danamon.co.id:6443" --insecure-skip-tls-verify -u ngi-core -p P@ssw0rdP@ssw0rd  
+oc project ngisit
+oc new-build --name=xfoff-onl-service --image-stream=openshift/redhat-openjdk18-openshift:1.1 --binary -n ngisit
+oc start-build xfoff-onl-service --from-file="D:\OpenShift\FCRNGIXfoffOnlService\25-07-2024\FCRNGIXfoffOnlService-0.0.0.1.jar" --follow -n ngisit
+oc new-app xfoff-onl-service -n ngisit --as-deployment-config
+oc create route edge xfoff-onl-service --service=xfoff-onl-service --port=8080 --hostname=xfoff-onl-service.dbankke.uat.danamon.co.id -n ngisit
+
+
+Create or replace Config Map:
+
+oc project ngisit
+
+oc delete cm xfoff-onl-service-cm
+oc delete cm xfoff-onl-service-commons-cm
+
+oc create configmap xfoff-onl-service-cm --from-file="D:\OpenShift\FCRNGIXfoffOnlService\application-xfoff-onl-service.yml"
+oc create configmap xfoff-onl-service-commons-cm --from-file="D:\OpenShift\FCRNGIXfoffOnlService\global.properties"
+
+oc set volume dc/xfoff-onl-service --add --overwrite=true --name=config-volume --mount-path=/deployments/config -t configmap --configmap-name=xfoff-onl-service-cm 
+oc set volume dc/xfoff-onl-service --add --overwrite=true --name=commons-volume --mount-path=/deployments/global -t configmap --configmap-name=xfoff-onl-service-commons-cm
+
+oc set env dc/xfoff-onl-service TZ=Asia/Jakarta -n ngisit
+oc set env dc/xfoff-onl-service JAVA_TOOL_OPTIONS="-Duser.home=/home/jboss -Duser.name=jboss -Duser.timezone=GMT+07:00 -Xms2048M -Xmx2048M -Djava.security.egd=file:///dev/urandom"
+oc set env dc/xfoff-onl-service GC_MAX_METASPACE_SIZE=1024
+
